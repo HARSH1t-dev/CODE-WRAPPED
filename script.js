@@ -1,23 +1,14 @@
-// ==========================================
-// 1. STATE & SETUP
-// ==========================================
-console.log("Code Battle & Wrapped Matrix Loaded!");
+console.log("Minimalist Code Battle Loaded!");
 
 let playerCount = 1;
-let myCodeforcesTags = {}; // Stores tags specifically for Player 1
-let chartInstance = null;  // Keeps track of the Chart.js instance
+let myCodeforcesTags = {}; 
+let chartInstance = null;  
 
-// ==========================================
-// 2. EVENT LISTENERS
-// ==========================================
 document.getElementById('add-friend-btn').addEventListener('click', addFriendInput);
 document.getElementById('fetch-btn').addEventListener('click', fetchAllStats);
 document.getElementById('chart-card').addEventListener('click', renderPieChart);
 document.getElementById('download-btn').addEventListener('click', downloadFlashcard);
 
-// ==========================================
-// 3. MAIN LOGIC
-// ==========================================
 function addFriendInput() {
     playerCount++;
     const container = document.getElementById('players-container');
@@ -39,7 +30,6 @@ async function fetchAllStats() {
     const playerRows = document.querySelectorAll('.player-row');
     const players = [];
 
-    // Gather input data
     playerRows.forEach((row, index) => {
         const lc = row.querySelector('.lc-input').value.trim();
         const cf = row.querySelector('.cf-input').value.trim();
@@ -50,7 +40,7 @@ async function fetchAllStats() {
     });
 
     if (players.length === 0) {
-        showError("Please enter at least one player's handle.");
+        showError("Please enter at least one handle.");
         return;
     }
 
@@ -58,7 +48,6 @@ async function fetchAllStats() {
     fetchBtn.disabled = true;
 
     try {
-        // Fetch data for all players concurrently
         for (let player of players) {
             let lcSolved = 0;
             let cfSolved = 0;
@@ -72,7 +61,6 @@ async function fetchAllStats() {
 
             if (player.cf) {
                 try {
-                    // Pass true if this is Player 1 so we can grab their topic tags
                     const cfData = await getCodeforcesStats(player.cf, player.id === 1); 
                     cfSolved = cfData.totalSolved || 0;
                 } catch (e) { console.warn(`CF fail for ${player.cf}`); }
@@ -82,20 +70,15 @@ async function fetchAllStats() {
             player.cfScore = cfSolved;
             player.totalScore = lcSolved + cfSolved;
         }
-
         populateMatrix(players);
     } catch (error) {
-        showError("An error occurred while fetching data. Check console.");
-        console.error(error);
+        showError("An error occurred while fetching data.");
     } finally {
-        fetchBtn.textContent = "Generate Matrix";
+        fetchBtn.textContent = "Simulate Battle";
         fetchBtn.disabled = false;
     }
 }
 
-// ==========================================
-// 4. API FETCHERS
-// ==========================================
 async function getLeetCodeStats(username) {
     const apis = [
         `https://leetcode-stats-api.herokuapp.com/${username}`,
@@ -123,8 +106,6 @@ async function getCodeforcesStats(handle, isPlayerOne) {
                 const probId = `${sub.problem.contestId}${sub.problem.index}`;
                 if (!solved.has(probId)) {
                     solved.add(probId);
-                    
-                    // Extract tags for the pie chart if this is Player 1
                     if (isPlayerOne && sub.problem.tags) {
                         sub.problem.tags.forEach(tag => {
                             myCodeforcesTags[tag] = (myCodeforcesTags[tag] || 0) + 1;
@@ -138,9 +119,122 @@ async function getCodeforcesStats(handle, isPlayerOne) {
     return { totalSolved };
 }
 
-// ==========================================
-// 5. UI UPDATERS
-// ==========================================
 function showError(message) {
     const box = document.getElementById('error-message');
-    box.innerHTML
+    box.innerHTML = message;
+    box.classList.remove('hidden');
+}
+
+function populateMatrix(players) {
+    document.getElementById('landing-screen').classList.add('hidden');
+    document.getElementById('matrix-container').classList.remove('hidden');
+
+    const sortedPlayers = [...players].sort((a, b) => b.totalScore - a.totalScore);
+
+    // 1. Set the Champion with Aura++
+    const champion = sortedPlayers[0];
+    document.getElementById('winner-name').textContent = `${champion.name} (Aura++)`;
+    document.getElementById('winner-score').textContent = `${champion.totalScore} Total`;
+
+    // 2. Populate Leaderboard
+    const listElement = document.getElementById('leaderboard-list');
+    listElement.innerHTML = '';
+    sortedPlayers.forEach((p) => {
+        const li = document.createElement('li');
+        // Add Aura++ indicator to the leaderboard as well
+        const displayName = p.id === champion.id ? `${p.name} (Aura++)` : p.name;
+        li.textContent = `${displayName}: ${p.totalScore} pts`;
+        listElement.appendChild(li);
+    });
+    
+    document.getElementById('chart-container').classList.add('hidden');
+    document.querySelector('.click-hint').style.display = 'block';
+
+    // 3. Shareable Flashcard
+    const you = players.find(p => p.id === 1);
+    if (you) {
+        let exportDisplayName = you.name.toUpperCase();
+        // If Player 1 is the Champion, they get Aura++ on their card
+        if (champion.id === 1) {
+            exportDisplayName += " (AURA++)";
+        }
+        
+        document.getElementById('export-name').textContent = exportDisplayName;
+        document.getElementById('export-lc').textContent = you.lcScore;
+        document.getElementById('export-cf').textContent = you.cfScore;
+        document.getElementById('export-total').textContent = you.totalScore;
+    }
+}
+
+function renderPieChart() {
+    const container = document.getElementById('chart-container');
+    const hint = document.querySelector('.click-hint');
+    if (!container.classList.contains('hidden')) return; 
+    
+    const tags = Object.keys(myCodeforcesTags);
+    if (tags.length === 0) return;
+
+    container.classList.remove('hidden');
+    hint.style.display = 'none';
+
+    const sortedTags = tags.sort((a, b) => myCodeforcesTags[b] - myCodeforcesTags[a]).slice(0, 6);
+    const dataValues = sortedTags.map(tag => myCodeforcesTags[tag]);
+
+    const ctx = document.getElementById('topicChart').getContext('2d');
+    if (chartInstance) chartInstance.destroy();
+
+    chartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: sortedTags,
+            datasets: [{
+                data: dataValues,
+                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'right', labels: { color: 'white', font: { family: 'Inter' } } } }
+        }
+    });
+}
+
+// Fixed & Bulletproof Download Function
+function downloadFlashcard() {
+    const card = document.getElementById('export-card');
+    const btn = document.getElementById('download-btn');
+    
+    if (!card || typeof html2canvas === 'undefined') {
+        alert("Library error. Please refresh and try again.");
+        return;
+    }
+
+    btn.textContent = "Generating...";
+    btn.disabled = true;
+
+    // Small delay ensures DOM and CSS are fully painted before capturing
+    setTimeout(() => {
+        html2canvas(card, {
+            scale: 2, 
+            backgroundColor: "#0a0a0a", // Matches the minimal backdrop
+            useCORS: true,
+            allowTaint: true
+        }).then(canvas => {
+            const image = canvas.toDataURL("image/png");
+            const link = document.createElement('a');
+            link.download = 'Code-Wrapped-Arena.png';
+            link.href = image;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            btn.textContent = "⬇ Download Flashcard";
+            btn.disabled = false;
+        }).catch(err => {
+            console.error("Canvas Error:", err);
+            btn.textContent = "Error! Try Again.";
+            btn.disabled = false;
+        });
+    }, 300);
+}
