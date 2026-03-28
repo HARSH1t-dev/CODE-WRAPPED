@@ -1,174 +1,179 @@
-:root {
-    --bg-color: #0f172a;
-    --card-bg: #1e293b;
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --primary: #3b82f6;
-    --primary-hover: #2563eb;
-    --lc-easy: #10b981;
-    --lc-medium: #f59e0b;
-    --lc-hard: #ef4444;
-    --error: #f87171;
-}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
 
 * {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 body {
-    background-color: var(--bg-color);
-    color: var(--text-main);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    padding: 20px;
-}
-
-.container {
-    max-width: 800px;
-    width: 100%;
-}
-
-header {
-    text-align: center;
-    margin-bottom: 2rem;
-}
-
-header h1 {
-    font-size: 2.5rem;
-    color: var(--primary);
-    margin-bottom: 0.5rem;
-}
-
-header p {
-    color: var(--text-muted);
-}
-
-.input-section {
-    background: var(--card-bg);
-    padding: 2rem;
-    border-radius: 12px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.input-group {
-    flex: 1;
-    min-width: 250px;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-label {
-    font-size: 0.9rem;
-    color: var(--text-muted);
-}
-
-input {
-    padding: 0.8rem;
-    border-radius: 6px;
-    border: 1px solid #334155;
-    background: #0f172a;
-    color: var(--text-main);
-    font-size: 1rem;
-}
-
-input:focus {
-    outline: none;
-    border-color: var(--primary);
-}
-
-button {
-    width: 100%;
-    padding: 1rem;
-    background-color: var(--primary);
+    font-family: 'Inter', sans-serif;
+    background-color: #121212;
     color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 1rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    margin-top: 1rem;
-}
-
-button:hover {
-    background-color: var(--primary-hover);
+    overflow: hidden; /* Prevent scrolling */
 }
 
 .hidden {
     display: none !important;
 }
 
+/* Landing Screen */
+#landing-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    padding: 20px;
+    background: radial-gradient(circle at top left, #2a2a2a, #121212);
+}
+
+.title {
+    font-size: 3rem;
+    font-weight: 900;
+    margin-bottom: 10px;
+    background: -webkit-linear-gradient(45deg, #1DB954, #1ed760);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+    color: #b3b3b3;
+    margin-bottom: 40px;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+    max-width: 300px;
+}
+
+input {
+    padding: 15px;
+    border-radius: 8px;
+    border: none;
+    background: #282828;
+    color: white;
+    font-size: 1rem;
+    outline: none;
+}
+
+input:focus {
+    box-shadow: 0 0 0 2px #1DB954;
+}
+
+button {
+    margin-top: 25px;
+    padding: 15px 30px;
+    border-radius: 30px;
+    border: none;
+    background-color: #1DB954;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+button:hover {
+    transform: scale(1.05);
+}
+
 #error-message {
-    background-color: rgba(239, 68, 68, 0.1);
-    color: var(--error);
-    padding: 1rem;
-    border-radius: 6px;
-    text-align: center;
-    margin-bottom: 1rem;
-    border: 1px solid var(--error);
-}
-
-#dashboard {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
-}
-
-.card {
-    background: var(--card-bg);
-    padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.card h2 {
-    margin-bottom: 1.5rem;
-    text-align: center;
-    border-bottom: 2px solid #334155;
-    padding-bottom: 0.5rem;
-}
-
-.leetcode-card h2 { color: #f59e0b; }
-.codeforces-card h2 { color: #ef4444; }
-
-.stat-item {
-    text-align: center;
-    margin-bottom: 1.5rem;
-}
-
-.stat-item .label {
-    display: block;
-    color: var(--text-muted);
-    font-size: 0.9rem;
-    margin-bottom: 0.5rem;
-}
-
-.stat-item .value {
-    display: block;
-    font-size: 2.5rem;
+    margin-top: 15px;
+    color: #ff4d4d;
     font-weight: bold;
 }
 
-.stat-breakdown {
+/* Wrapped Container (The Story) */
+#wrapped-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1000;
     display: flex;
-    justify-content: space-between;
-    background: #0f172a;
-    padding: 1rem;
-    border-radius: 8px;
+    flex-direction: column;
 }
 
-.diff { font-weight: bold; font-size: 0.9rem; }
-.easy { color: var(--lc-easy); }
-.medium { color: var(--lc-medium); }
-.hard { color: var(--lc-hard); }
-.current-rating, .max-rating, .rank { color: var(--text-main); }
+/* Progress Bars */
+#progress-bars-container {
+    display: flex;
+    gap: 5px;
+    padding: 15px 10px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+}
+
+.progress-bar {
+    flex: 1;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    width: 0%;
+    background: white;
+}
+
+/* Slides */
+#slides-container {
+    flex: 1;
+    position: relative;
+    cursor: pointer;
+}
+
+.slide {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    padding: 2rem;
+    text-align: center;
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+}
+
+.slide-content h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    animation: slideUp 0.6s ease forwards;
+}
+
+.slide-content .highlight {
+    font-size: 5rem;
+    font-weight: 900;
+    color: #FFE600; /* Vibrant Wrapped Yellow */
+    margin: 20px 0;
+    text-shadow: 2px 4px 10px rgba(0,0,0,0.2);
+    animation: popIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.slide-content p {
+    font-size: 1.2rem;
+    font-weight: bold;
+    opacity: 0.9;
+    animation: slideUp 1s ease forwards;
+}
+
+/* Animations */
+@keyframes slideUp {
+    from { transform: translateY(40px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes popIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
