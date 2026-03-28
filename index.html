@@ -5,60 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Code Wrapped</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1><i class="fa-solid fa-code"></i>Code Wrapped</h1>
-            <p>Track your problem-solving progress across platforms.</p>
-        </header>
 
-        <section class="input-section">
-            <div class="input-group">
-                <label for="leetcode-username"><i class="fa-solid fa-terminal"></i> LeetCode Username</label>
-                <input type="text" id="leetcode-username" placeholder="e.g., neetcode">
-            </div>
-            <div class="input-group">
-                <label for="codeforces-handle"><i class="fa-solid fa-chart-simple"></i> Codeforces Handle</label>
-                <input type="text" id="codeforces-handle" placeholder="e.g., tourist">
-            </div>
-            <button id="fetch-btn">Fetch Stats</button>
-        </section>
+    <div id="landing-screen" class="container">
+        <h1 class="title">Code Wrapped</h1>
+        <p class="subtitle">Discover your coding journey this year.</p>
+        
+        <div class="input-group">
+            <input type="text" id="leetcode-username" placeholder="LeetCode Username">
+            <input type="text" id="codeforces-handle" placeholder="Codeforces Handle">
+        </div>
+        
+        <button id="fetch-btn">Show My Wrapped</button>
+        <div id="error-message" class="hidden"></div>
+    </div>
 
-        <section id="error-message" class="hidden"></section>
-
-        <section id="dashboard" class="hidden">
-            <div class="card leetcode-card">
-                <h2>LeetCode</h2>
-                <div class="stats" id="leetcode-stats">
-                    <div class="stat-item total">
-                        <span class="label">Total Solved</span>
-                        <span class="value" id="lc-total">-</span>
-                    </div>
-                    <div class="stat-breakdown">
-                        <div class="diff easy">Easy: <span id="lc-easy">-</span></div>
-                        <div class="diff medium">Medium: <span id="lc-medium">-</span></div>
-                        <div class="diff hard">Hard: <span id="lc-hard">-</span></div>
-                    </div>
-                </div>
+    <div id="wrapped-container" class="hidden">
+        <div id="progress-bars-container"></div>
+        
+        <div id="slides-container" onclick="nextSlide()">
             </div>
-
-            <div class="card codeforces-card">
-                <h2>Codeforces</h2>
-                <div class="stats" id="codeforces-stats">
-                    <div class="stat-item total">
-                        <span class="label">Total Solved</span>
-                        <span class="value" id="cf-total">-</span>
-                    </div>
-                    <div class="stat-breakdown">
-                        <div class="diff current-rating">Rating: <span id="cf-rating">-</span></div>
-                        <div class="diff max-rating">Max Rating: <span id="cf-max-rating">-</span></div>
-                        <div class="diff rank">Rank: <span id="cf-rank">-</span></div>
-                    </div>
-                </div>
-            </div>
-        </section>
     </div>
 
     <script src="script.js"></script>
