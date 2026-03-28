@@ -6,6 +6,7 @@
     <title>Code Wrapped Matrix</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 
@@ -41,8 +42,7 @@
 
             <div class="flashcard leaderboard-card">
                 <h3>Leaderboard</h3>
-                <ol id="leaderboard-list" class="leaderboard-list">
-                    </ol>
+                <ol id="leaderboard-list" class="leaderboard-list"></ol>
             </div>
 
             <div class="flashcard chart-card" id="chart-card">
@@ -52,13 +52,42 @@
                     <canvas id="topicChart"></canvas>
                 </div>
             </div>
-
+            
             <div class="flashcard aura-card">
-                <h3>Developer Aura</h3>
-                <div class="big-stat text-stat">Unmatched ✨</div>
-                <button onclick="location.reload()" class="reset-btn">Rematch</button>
+                 <h3>Developer Aura</h3>
+                 <div class="big-stat text-stat">Unmatched ✨</div>
+                 <button onclick="location.reload()" class="reset-btn">Rematch</button>
+             </div>
+        </div>
+
+        <div class="share-section">
+            <h2 class="matrix-title" style="margin-top: 40px; font-size: 2rem;">Share Your Wrapped</h2>
+            
+            <div id="export-card" class="export-card">
+                <div class="export-header">CODE WRAPPED</div>
+                <h2 id="export-name" class="export-name">Player 1</h2>
+                
+                <div class="export-stats-container">
+                    <div class="export-stat-box">
+                        <span class="export-label">LeetCode</span>
+                        <span id="export-lc" class="export-value">0</span>
+                    </div>
+                    <div class="export-stat-box">
+                        <span class="export-label">Codeforces</span>
+                        <span id="export-cf" class="export-value">0</span>
+                    </div>
+                </div>
+
+                <div class="export-total-box">
+                    <span class="export-label">Total Arsenal</span>
+                    <span id="export-total" class="export-value huge-value">0</span>
+                    <span class="export-label">Problems Crushed</span>
+                </div>
+
+                <div class="export-footer">harsh1t-dev.github.io/CODE-WRAPPED</div>
             </div>
 
+            <button id="download-btn" class="download-btn">⬇ Download Flashcard</button>
         </div>
     </div>
 
