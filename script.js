@@ -1,221 +1,200 @@
-console.log("Code Wrapped script loaded!");
+let playerCount = 1;
+let myCodeforcesTags = {}; // Store Player 1's CF tags for the pie chart
+let chartInstance = null;
 
-document.getElementById('fetch-btn').addEventListener('click', fetchStats);
+document.getElementById('add-friend-btn').addEventListener('click', () => {
+    playerCount++;
+    const container = document.getElementById('players-container');
+    const newPlayerRow = document.createElement('div');
+    newPlayerRow.className = 'input-group player-row';
+    newPlayerRow.innerHTML = `
+        <h3>Player ${playerCount}</h3>
+        <input type="text" class="lc-input" placeholder="LeetCode Username">
+        <input type="text" class="cf-input" placeholder="Codeforces Handle">
+    `;
+    container.appendChild(newPlayerRow);
+});
 
-let currentSlideIndex = 0;
-let slides = [];
-let slideTimeout;
-const SLIDE_DURATION = 5000; // 5 seconds per slide
+document.getElementById('fetch-btn').addEventListener('click', fetchAllStats);
 
-async function fetchStats() {
-    console.log("Fetch button clicked!");
-    const lcUsername = document.getElementById('leetcode-username').value.trim();
-    const cfHandle = document.getElementById('codeforces-handle').value.trim();
+// Show chart when clicking the Chart Card
+document.getElementById('chart-card').addEventListener('click', renderPieChart);
+
+async function fetchAllStats() {
     const errorBox = document.getElementById('error-message');
     const fetchBtn = document.getElementById('fetch-btn');
-
     errorBox.classList.add('hidden');
-    errorBox.innerHTML = ''; // Clear old errors
+    
+    // Gather all player inputs
+    const playerRows = document.querySelectorAll('.player-row');
+    const players = [];
 
-    if (!lcUsername && !cfHandle) {
-        showError("Please enter at least one username.");
+    playerRows.forEach((row, index) => {
+        const lc = row.querySelector('.lc-input').value.trim();
+        const cf = row.querySelector('.cf-input').value.trim();
+        // Give them a default name if fields are empty to avoid errors
+        const name = cf || lc || `Player ${index + 1}`;
+        if (lc || cf) {
+            players.push({ id: index + 1, name, lc, cf, totalScore: 0 });
+        }
+    });
+
+    if (players.length === 0) {
+        showError("Please enter at least one player's handle.");
         return;
     }
 
-    fetchBtn.textContent = "Analyzing your data...";
+    fetchBtn.textContent = "Simulating Battle...";
     fetchBtn.disabled = true;
 
     try {
-        let lcData = null;
-        let cfData = null;
-        let errors = [];
+        // Fetch data for all players concurrently
+        for (let player of players) {
+            let lcSolved = 0;
+            let cfSolved = 0;
 
-        // Fetch independently: If one fails, the other still generates a slide
-        if (lcUsername) {
-            try {
-                lcData = await getLeetCodeStats(lcUsername);
-            } catch (e) {
-                console.error("LeetCode Error:", e);
-                errors.push(`LeetCode: ${e.message}`);
+            if (player.lc) {
+                try {
+                    const lcData = await getLeetCodeStats(player.lc);
+                    lcSolved = lcData.totalSolved || 0;
+                } catch (e) { console.warn(`LC fail for ${player.lc}`); }
             }
-        }
 
-        if (cfHandle) {
-            try {
-                cfData = await getCodeforcesStats(cfHandle);
-            } catch (e) {
-                console.error("Codeforces Error:", e);
-                errors.push(`Codeforces: ${e.message}`);
+            if (player.cf) {
+                try {
+                    const cfData = await getCodeforcesStats(player.cf, player.id === 1); 
+                    cfSolved = cfData.totalSolved || 0;
+                } catch (e) { console.warn(`CF fail for ${player.cf}`); }
             }
-        }
-        
-        // Only throw a hard error if EVERYTHING failed
-        if (!lcData && !cfData) {
-             throw new Error("Failed to fetch data:<br><br>" + errors.join("<br>"));
+
+            player.totalScore = lcSolved + cfSolved;
         }
 
-        generateWrappedStory(lcData, cfData);
+        populateMatrix(players);
     } catch (error) {
-        showError(error.message);
+        showError("An error occurred while fetching data.");
     } finally {
-        fetchBtn.textContent = "Show My Wrapped";
+        fetchBtn.textContent = "Generate Matrix";
         fetchBtn.disabled = false;
     }
 }
 
 async function getLeetCodeStats(username) {
-    // Array of fallback APIs because free proxies go down frequently
     const apis = [
         `https://leetcode-stats-api.herokuapp.com/${username}`,
-        `https://alfa-leetcode-api.onrender.com/${username}`,
-        `https://leetcode-api-faisalshohag.vercel.app/${username}`
+        `https://alfa-leetcode-api.onrender.com/${username}`
     ];
-    
     for (const url of apis) {
         try {
-            console.log("Trying LeetCode API:", url);
             const response = await fetch(url);
             const data = await response.json();
-            
-            if (data.status === "error" || data.errors) continue; // Try the next API
-            
-            if (data.totalSolved !== undefined) {
-                return {
-                    totalSolved: data.totalSolved,
-                    easySolved: data.easySolved,
-                    mediumSolved: data.mediumSolved,
-                    hardSolved: data.hardSolved
-                };
-            }
-        } catch (e) {
-            console.warn("API failed:", url);
-        }
+            if (data.totalSolved !== undefined) return data;
+        } catch (e) { continue; }
     }
-    throw new Error("User not found or all LeetCode APIs are currently down.");
+    throw new Error("LeetCode API failed.");
 }
 
-async function getCodeforcesStats(handle) {
-    console.log("Fetching Codeforces for:", handle);
-    const infoUrl = `https://codeforces.com/api/user.info?handles=${handle}`;
-    const infoRes = await fetch(infoUrl);
-    const infoData = await infoRes.json();
-    if (infoData.status !== "OK") throw new Error(infoData.comment);
-
-    const statusUrl = `https://codeforces.com/api/user.status?handle=${handle}`;
-    const statusRes = await fetch(statusUrl);
+async function getCodeforcesStats(handle, isPlayerOne) {
+    const statusRes = await fetch(`https://codeforces.com/api/user.status?handle=${handle}`);
     const statusData = await statusRes.json();
     
     let totalSolved = 0;
     if (statusData.status === "OK") {
-        const solvedProblems = new Set();
+        const solved = new Set();
         statusData.result.forEach(sub => {
-            if (sub.verdict === "OK") solvedProblems.add(`${sub.problem.contestId}${sub.problem.index}`);
+            if (sub.verdict === "OK") {
+                const probId = `${sub.problem.contestId}${sub.problem.index}`;
+                if (!solved.has(probId)) {
+                    solved.add(probId);
+                    
+                    // If this is Player 1 (You), count the tags for the Pie Chart
+                    if (isPlayerOne && sub.problem.tags) {
+                        sub.problem.tags.forEach(tag => {
+                            myCodeforcesTags[tag] = (myCodeforcesTags[tag] || 0) + 1;
+                        });
+                    }
+                }
+            }
         });
-        totalSolved = solvedProblems.size;
+        totalSolved = solved.size;
     }
-    return { user: infoData.result[0], totalSolved };
+    return { totalSolved };
 }
 
 function showError(message) {
-    const errorBox = document.getElementById('error-message');
-    errorBox.innerHTML = message;
-    errorBox.classList.remove('hidden');
+    const box = document.getElementById('error-message');
+    box.innerHTML = message;
+    box.classList.remove('hidden');
 }
 
-/* --- WRAPPED STORY LOGIC --- */
-
-function generateWrappedStory(lcData, cfData) {
+function populateMatrix(players) {
     document.getElementById('landing-screen').classList.add('hidden');
-    document.getElementById('wrapped-container').classList.remove('hidden');
+    document.getElementById('matrix-container').classList.remove('hidden');
 
-    slides = [];
+    // Sort players by total score descending
+    players.sort((a, b) => b.totalScore - a.totalScore);
+
+    // 1. Set The Champion
+    const champion = players[0];
+    document.getElementById('winner-name').textContent = champion.name;
+    document.getElementById('winner-score').textContent = `${champion.totalScore} Total`;
+
+    // 2. Populate Leaderboard List
+    const listElement = document.getElementById('leaderboard-list');
+    listElement.innerHTML = '';
+    players.forEach((p, index) => {
+        const li = document.createElement('li');
+        li.textContent = `${p.name}: ${p.totalScore} pts`;
+        listElement.appendChild(li);
+    });
     
-    slides.push({
-        bg: 'linear-gradient(135deg, #8E2DE2 0%, #4A00E0 100%)',
-        html: `
-            <h2>This year, you didn't just write code.</h2>
-            <h2>You built things.</h2>
-        `
-    });
-
-    if (lcData) {
-        slides.push({
-            bg: 'linear-gradient(135deg, #FF416C 0%, #FF4B2B 100%)',
-            html: `
-                <h2>On LeetCode, you crushed</h2>
-                <div class="highlight">${lcData.totalSolved}</div>
-                <h2>Problems</h2>
-                <p>Easy: ${lcData.easySolved} | Med: ${lcData.mediumSolved} | Hard: ${lcData.hardSolved}</p>
-            `
-        });
-    }
-
-    if (cfData) {
-        slides.push({
-            bg: 'linear-gradient(135deg, #00B4DB 0%, #0083B0 100%)',
-            html: `
-                <h2>On Codeforces, you conquered</h2>
-                <div class="highlight">${cfData.totalSolved}</div>
-                <h2>Unique Problems</h2>
-                <p>Peak Rating: ${cfData.user.maxRating || "Unrated"} (${cfData.user.rank || "No rank"})</p>
-            `
-        });
-    }
-
-    slides.push({
-        bg: 'linear-gradient(135deg, #1DB954 0%, #191414 100%)',
-        html: `
-            <h2>Your Developer Aura is</h2>
-            <div class="highlight">Unmatched ✨</div>
-            <button onclick="location.reload()" style="padding: 15px 30px; margin-top:30px; border-radius:30px; border:none; background:white; color:black; font-weight:bold; font-size: 1.1rem; cursor:pointer;">Do it again</button>
-        `
-    });
-
-    buildProgressBars();
-    currentSlideIndex = 0;
-    showSlide(currentSlideIndex);
+    // Reset Pie chart state
+    document.getElementById('chart-container').classList.add('hidden');
+    document.querySelector('.click-hint').style.display = 'block';
 }
 
-function buildProgressBars() {
-    const container = document.getElementById('progress-bars-container');
-    container.innerHTML = '';
-    slides.forEach((_, i) => {
-        container.innerHTML += `<div class="progress-bar"><div class="progress-fill" id="fill-${i}"></div></div>`;
+function renderPieChart() {
+    const container = document.getElementById('chart-container');
+    const hint = document.querySelector('.click-hint');
+    
+    // Only render if it's currently hidden and we have data
+    if (!container.classList.contains('hidden')) return; 
+    
+    const tags = Object.keys(myCodeforcesTags);
+    if (tags.length === 0) {
+        alert("No Codeforces tag data found for Player 1.");
+        return;
+    }
+
+    container.classList.remove('hidden');
+    hint.style.display = 'none';
+
+    // Sort tags to only show top 6 to keep the chart clean
+    const sortedTags = tags.sort((a, b) => myCodeforcesTags[b] - myCodeforcesTags[a]).slice(0, 6);
+    const dataValues = sortedTags.map(tag => myCodeforcesTags[tag]);
+
+    const ctx = document.getElementById('topicChart').getContext('2d');
+    
+    // Destroy previous chart if it exists to prevent glitching
+    if (chartInstance) chartInstance.destroy();
+
+    chartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: sortedTags,
+            datasets: [{
+                data: dataValues,
+                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'],
+                borderWidth: 0,
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'right', labels: { color: 'white', font: { family: 'Inter' } } }
+            }
+        }
     });
-}
-
-function showSlide(index) {
-    if (index >= slides.length) return; 
-    
-    clearTimeout(slideTimeout);
-    const container = document.getElementById('slides-container');
-    
-    container.innerHTML = `
-        <div class="slide" style="background: ${slides[index].bg}">
-            <div class="slide-content">${slides[index].html}</div>
-        </div>
-    `;
-    
-    setTimeout(() => {
-        const fill = document.getElementById(`fill-${index}`);
-        fill.style.transition = `width ${SLIDE_DURATION}ms linear`;
-        fill.style.width = '100%';
-    }, 50);
-
-    slideTimeout = setTimeout(() => {
-        nextSlide();
-    }, SLIDE_DURATION);
-}
-
-function nextSlide() {
-    if (currentSlideIndex < slides.length) {
-        const currentFill = document.getElementById(`fill-${currentSlideIndex}`);
-        currentFill.style.transition = 'none';
-        currentFill.style.width = '100%';
-    }
-    
-    currentSlideIndex++;
-    if (currentSlideIndex < slides.length) {
-        showSlide(currentSlideIndex);
-    }
 }
