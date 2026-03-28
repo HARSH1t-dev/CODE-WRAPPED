@@ -1,3 +1,5 @@
+console.log("Code Wrapped script loaded!");
+
 document.getElementById('fetch-btn').addEventListener('click', fetchStats);
 
 let currentSlideIndex = 0;
@@ -6,12 +8,14 @@ let slideTimeout;
 const SLIDE_DURATION = 5000; // 5 seconds per slide
 
 async function fetchStats() {
+    console.log("Fetch button clicked!");
     const lcUsername = document.getElementById('leetcode-username').value.trim();
     const cfHandle = document.getElementById('codeforces-handle').value.trim();
     const errorBox = document.getElementById('error-message');
     const fetchBtn = document.getElementById('fetch-btn');
 
     errorBox.classList.add('hidden');
+    errorBox.innerHTML = ''; // Clear old errors
 
     if (!lcUsername && !cfHandle) {
         showError("Please enter at least one username.");
@@ -24,10 +28,32 @@ async function fetchStats() {
     try {
         let lcData = null;
         let cfData = null;
+        let errors = [];
 
-        if (lcUsername) lcData = await getLeetCodeStats(lcUsername);
-        if (cfHandle) cfData = await getCodeforcesStats(cfHandle);
+        // Fetch independently: If one fails, the other still generates a slide
+        if (lcUsername) {
+            try {
+                lcData = await getLeetCodeStats(lcUsername);
+            } catch (e) {
+                console.error("LeetCode Error:", e);
+                errors.push(`LeetCode: ${e.message}`);
+            }
+        }
+
+        if (cfHandle) {
+            try {
+                cfData = await getCodeforcesStats(cfHandle);
+            } catch (e) {
+                console.error("Codeforces Error:", e);
+                errors.push(`Codeforces: ${e.message}`);
+            }
+        }
         
+        // Only throw a hard error if EVERYTHING failed
+        if (!lcData && !cfData) {
+             throw new Error("Failed to fetch data:<br><br>" + errors.join("<br>"));
+        }
+
         generateWrappedStory(lcData, cfData);
     } catch (error) {
         showError(error.message);
@@ -38,18 +64,42 @@ async function fetchStats() {
 }
 
 async function getLeetCodeStats(username) {
-    const url = `https://leetcode-api-faisalshohag.vercel.app/${username}`;
-    const response = await fetch(url);
-    const data = await response.json();
-    if (data.errors || !data.totalSolved) throw new Error(`LeetCode: User not found.`);
-    return data;
+    // Array of fallback APIs because free proxies go down frequently
+    const apis = [
+        `https://leetcode-stats-api.herokuapp.com/${username}`,
+        `https://alfa-leetcode-api.onrender.com/${username}`,
+        `https://leetcode-api-faisalshohag.vercel.app/${username}`
+    ];
+    
+    for (const url of apis) {
+        try {
+            console.log("Trying LeetCode API:", url);
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data.status === "error" || data.errors) continue; // Try the next API
+            
+            if (data.totalSolved !== undefined) {
+                return {
+                    totalSolved: data.totalSolved,
+                    easySolved: data.easySolved,
+                    mediumSolved: data.mediumSolved,
+                    hardSolved: data.hardSolved
+                };
+            }
+        } catch (e) {
+            console.warn("API failed:", url);
+        }
+    }
+    throw new Error("User not found or all LeetCode APIs are currently down.");
 }
 
 async function getCodeforcesStats(handle) {
+    console.log("Fetching Codeforces for:", handle);
     const infoUrl = `https://codeforces.com/api/user.info?handles=${handle}`;
     const infoRes = await fetch(infoUrl);
     const infoData = await infoRes.json();
-    if (infoData.status !== "OK") throw new Error(`Codeforces: ${infoData.comment}`);
+    if (infoData.status !== "OK") throw new Error(infoData.comment);
 
     const statusUrl = `https://codeforces.com/api/user.status?handle=${handle}`;
     const statusRes = await fetch(statusUrl);
@@ -68,7 +118,7 @@ async function getCodeforcesStats(handle) {
 
 function showError(message) {
     const errorBox = document.getElementById('error-message');
-    errorBox.textContent = message;
+    errorBox.innerHTML = message;
     errorBox.classList.remove('hidden');
 }
 
@@ -80,7 +130,6 @@ function generateWrappedStory(lcData, cfData) {
 
     slides = [];
     
-    // Slide 1: Intro
     slides.push({
         bg: 'linear-gradient(135deg, #8E2DE2 0%, #4A00E0 100%)',
         html: `
@@ -89,7 +138,6 @@ function generateWrappedStory(lcData, cfData) {
         `
     });
 
-    // Slide 2: Leetcode
     if (lcData) {
         slides.push({
             bg: 'linear-gradient(135deg, #FF416C 0%, #FF4B2B 100%)',
@@ -102,7 +150,6 @@ function generateWrappedStory(lcData, cfData) {
         });
     }
 
-    // Slide 3: Codeforces
     if (cfData) {
         slides.push({
             bg: 'linear-gradient(135deg, #00B4DB 0%, #0083B0 100%)',
@@ -115,13 +162,12 @@ function generateWrappedStory(lcData, cfData) {
         });
     }
 
-    // Slide 4: Outro
     slides.push({
         bg: 'linear-gradient(135deg, #1DB954 0%, #191414 100%)',
         html: `
             <h2>Your Developer Aura is</h2>
             <div class="highlight">Unmatched ✨</div>
-            <button onclick="location.reload()" style="margin-top:30px; background:white; color:black;">Do it again</button>
+            <button onclick="location.reload()" style="padding: 15px 30px; margin-top:30px; border-radius:30px; border:none; background:white; color:black; font-weight:bold; font-size: 1.1rem; cursor:pointer;">Do it again</button>
         `
     });
 
@@ -144,21 +190,18 @@ function showSlide(index) {
     clearTimeout(slideTimeout);
     const container = document.getElementById('slides-container');
     
-    // Render slide
     container.innerHTML = `
         <div class="slide" style="background: ${slides[index].bg}">
             <div class="slide-content">${slides[index].html}</div>
         </div>
     `;
     
-    // Animate progress bar
     setTimeout(() => {
         const fill = document.getElementById(`fill-${index}`);
         fill.style.transition = `width ${SLIDE_DURATION}ms linear`;
         fill.style.width = '100%';
     }, 50);
 
-    // Set timer for next slide
     slideTimeout = setTimeout(() => {
         nextSlide();
     }, SLIDE_DURATION);
@@ -166,7 +209,6 @@ function showSlide(index) {
 
 function nextSlide() {
     if (currentSlideIndex < slides.length) {
-        // Instantly fill current bar if user tapped early
         const currentFill = document.getElementById(`fill-${currentSlideIndex}`);
         currentFill.style.transition = 'none';
         currentFill.style.width = '100%';
