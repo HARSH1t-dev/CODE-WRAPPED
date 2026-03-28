@@ -3,29 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Code Wrapped</title>
+    <title>Code Wrapped Matrix</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
     <div id="landing-screen" class="container">
-        <h1 class="title">Code Wrapped</h1>
-        <p class="subtitle">Discover your coding journey this year.</p>
+        <h1 class="title">Code Battle & Wrapped</h1>
         
-        <div class="input-group">
-            <input type="text" id="leetcode-username" placeholder="LeetCode Username">
-            <input type="text" id="codeforces-handle" placeholder="Codeforces Handle">
+        <div id="players-container">
+            <div class="input-group player-row">
+                <h3>Player 1 (You)</h3>
+                <input type="text" class="lc-input" placeholder="LeetCode Username" value="harsh1t-dev">
+                <input type="text" class="cf-input" placeholder="Codeforces Handle" value="HARSHIT_3012">
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button id="add-friend-btn" class="secondary-btn">+ Add Friend</button>
+            <button id="fetch-btn">Generate Matrix</button>
         </div>
         
-        <button id="fetch-btn">Show My Wrapped</button>
         <div id="error-message" class="hidden"></div>
     </div>
 
-    <div id="wrapped-container" class="hidden">
-        <div id="progress-bars-container"></div>
-        
-        <div id="slides-container" onclick="nextSlide()">
+    <div id="matrix-container" class="hidden">
+        <h1 class="matrix-title">The Arena Results</h1>
+        <div class="grid-layout">
+            
+            <div class="flashcard champion-card">
+                <h3>👑 The Champion</h3>
+                <div class="big-stat" id="winner-name">--</div>
+                <p>Most Total Problems Solved</p>
+                <div class="sub-stats" id="winner-score">-- Problems</div>
             </div>
+
+            <div class="flashcard leaderboard-card">
+                <h3>Leaderboard</h3>
+                <ol id="leaderboard-list" class="leaderboard-list">
+                    </ol>
+            </div>
+
+            <div class="flashcard chart-card" id="chart-card">
+                <h3>Your CF Topics</h3>
+                <p class="click-hint">(Click to reveal breakdown)</p>
+                <div id="chart-container" class="hidden">
+                    <canvas id="topicChart"></canvas>
+                </div>
+            </div>
+
+            <div class="flashcard aura-card">
+                <h3>Developer Aura</h3>
+                <div class="big-stat text-stat">Unmatched ✨</div>
+                <button onclick="location.reload()" class="reset-btn">Rematch</button>
+            </div>
+
+        </div>
     </div>
 
     <script src="script.js"></script>
