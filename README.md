@@ -11,3 +11,6 @@ This project is built using vanilla web technologies:
 * **HTML5:** Structure and content (`index.html`)
 * **CSS3:** Styling and responsive design (`style.css`)
 * **JavaScript:** Interactivity and logic (`script.js`)
+
+## AUTHOR
+HARSHIT SWAROOP
