@@ -1,4 +1,4 @@
-console.log("Code Wrapped");
+console.log("Code Battle Arena Loaded!");
 
 let playerCount = 1;
 let myCodeforcesTags = {}; 
@@ -160,7 +160,7 @@ function populateMatrix(players) {
 
     const sortedPlayers = [...players].sort((a, b) => b.totalScore - a.totalScore);
 
-    // 1. Set the Champion (Removed AURA++)
+    // 1. Set the Champion
     const champion = sortedPlayers[0];
     document.getElementById('winner-name').textContent = champion.name;
     document.getElementById('winner-score').textContent = `${champion.totalScore} Total`;
@@ -189,41 +189,45 @@ function populateMatrix(players) {
         const exportDisplayName = you.name.toUpperCase();
         document.getElementById('export-name').textContent = exportDisplayName;
         
-        // Set Personal Total
-        document.getElementById('export-total').textContent = you.totalScore;
+        // Set Personal Total (Safely, without old LC/CF references)
+        const totalEl = document.getElementById('export-total');
+        if (totalEl) totalEl.textContent = you.totalScore;
 
         // Generate Bar Chart HTML
         const chartContainer = document.getElementById('export-battle-chart-container');
-        chartContainer.innerHTML = ''; // Clear old chart
-
-        // Highest score determines 100% width
-        const maxScore = sortedPlayers[0].totalScore || 1; 
-
-        sortedPlayers.forEach((player, index) => {
-            const initial = player.name.charAt(0).toUpperCase();
-            const color = getAvatarColor(index);
+        
+        if (chartContainer) {
+            chartContainer.innerHTML = ''; // Clear old chart
             
-            // Calculate width percentage, enforce minimum width for visibility if score > 0
-            let widthPercentage = (player.totalScore / maxScore) * 100;
-            if(player.totalScore > 0 && widthPercentage < 8) widthPercentage = 8; 
+            // Highest score determines 100% width
+            const maxScore = sortedPlayers[0].totalScore || 1; 
 
-            // Create row HTML
-            const barRow = `
-                <div class="chart-bar-row">
-                    <div class="bar-label">${player.name}</div>
-                    <div class="bar-container">
-                        <div class="bar-fill" style="width: ${widthPercentage}%;">
-                            <div class="bar-avatar" style="background-color: ${color};">
-                                ${initial}
+            sortedPlayers.forEach((player, index) => {
+                const initial = player.name.charAt(0).toUpperCase();
+                const color = getAvatarColor(index);
+                
+                // Calculate width percentage, enforce minimum width for visibility
+                let widthPercentage = (player.totalScore / maxScore) * 100;
+                if(player.totalScore > 0 && widthPercentage < 8) widthPercentage = 8; 
+
+                // Create row HTML
+                const barRow = `
+                    <div class="chart-bar-row">
+                        <div class="bar-label">${player.name}</div>
+                        <div class="bar-container">
+                            <div class="bar-fill" style="width: ${widthPercentage}%;">
+                                <div class="bar-avatar" style="background-color: ${color};">
+                                    ${initial}
+                                </div>
                             </div>
                         </div>
+                        <div class="bar-value">${player.totalScore}</div>
                     </div>
-                    <div class="bar-value">${player.totalScore}</div>
-                </div>
-            `;
-            
-            chartContainer.innerHTML += barRow;
-        });
+                `;
+                
+                chartContainer.innerHTML += barRow;
+            });
+        }
     }
 }
 
@@ -318,5 +322,5 @@ function downloadFlashcard() {
             btn.disabled = false;
             alert("Could not generate image. Check console for details.");
         });
-    }, 500); // 0.5s delay is safer
+    }, 500); 
 }
