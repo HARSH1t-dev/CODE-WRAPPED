@@ -3,7 +3,7 @@
 This project focuses on different DSA platforms and shows the stats of problems solved, problem types et cetera onto a single platform.
 Presently it focuses on just two platforms LeetCode, Codeforces.
 
-## 🚀 Live Demo
+## 🚀 PROJECT DEMO
 **[View the live project here](https://harsh1t-dev.github.io/CODE-WRAPPED/)**
 
 ## 🛠️ Tech Stack
