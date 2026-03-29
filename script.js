@@ -133,7 +133,7 @@ function populateMatrix(players) {
 
     // 1. Set the Champion with Aura++
     const champion = sortedPlayers[0];
-    document.getElementById('winner-name').textContent = `${champion.name} (Aura++)`;
+    document.getElementById('winner-name').textContent = `${champion.name} `;
     document.getElementById('winner-score').textContent = `${champion.totalScore} Total`;
 
     // 2. Populate Leaderboard
@@ -142,7 +142,7 @@ function populateMatrix(players) {
     sortedPlayers.forEach((p) => {
         const li = document.createElement('li');
         // Add Aura++ indicator to the leaderboard as well
-        const displayName = p.id === champion.id ? `${p.name} (Aura++)` : p.name;
+        const displayName = p.id === champion.id ? `${p.name} ` : p.name;
         li.textContent = `${displayName}: ${p.totalScore} pts`;
         listElement.appendChild(li);
     });
