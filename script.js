@@ -73,7 +73,9 @@ async function fetchAllStats() {
                 try {
                     const lcData = await getLeetCodeStats(player.lc);
                     lcSolved = lcData.totalSolved || 0;
-                } catch (e) { console.warn(`LC fail for ${player.lc}`); }
+                } catch (e) { 
+                    console.warn(`LC fail for ${player.lc}`, e); 
+                }
             }
 
             if (player.cf) {
@@ -82,42 +84,76 @@ async function fetchAllStats() {
                     const isPlayerOne = (player.id === 1);
                     const cfData = await getCodeforcesStats(player.cf, isPlayerOne); 
                     cfSolved = cfData.totalSolved || 0;
-                } catch (e) { console.warn(`CF fail for ${player.cf}`); }
+                } catch (e) { 
+                    console.warn(`CF fail for ${player.cf}`, e); 
+                }
             }
 
             player.lcScore = lcSolved;
             player.cfScore = cfSolved;
             player.totalScore = lcSolved + cfSolved;
         }
+        
         populateMatrix(players);
     } catch (error) {
         console.error(error);
-        showError("An error occurred while fetching data. Check handles and internet connection.");
+        showError("An error occurred while rendering the data. Check console for details.");
     } finally {
         fetchBtn.textContent = "Simulate Battle";
         fetchBtn.disabled = false;
     }
 }
 
+// 🚀 UPGRADED: Fallback Mechanism for LeetCode APIs
 async function getLeetCodeStats(username) {
     const apis = [
-        `https://leetcode-stats-api.herokuapp.com/${username}`,
-        //`https://alfa-leetcode-api.onrender.com/${username}` // Secondary usually slow
+        {
+            url: `https://leetcode-stats-api.herokuapp.com/${username}`,
+            extract: (data) => data.totalSolved
+        },
+        {
+            url: `https://alfa-leetcode-api.onrender.com/${username}/solved`,
+            extract: (data) => data.solvedProblem
+        },
+        {
+            url: `https://leetcode-api-faisalshohag.vercel.app/${username}`,
+            extract: (data) => data.totalSolved
+        }
     ];
-    for (const url of apis) {
+
+    for (const api of apis) {
         try {
-            const response = await fetch(url);
-            if(!response.ok) continue;
+            const response = await fetch(api.url);
+            if (!response.ok) continue;
+            
             const data = await response.json();
-            if (data.totalSolved !== undefined) return data;
-        } catch (e) { continue; }
+            
+            // Check for API-specific error responses (like user not found)
+            if (data.status === "error" || data.errors) {
+                console.warn(`User not found or error on ${api.url}`);
+                continue; 
+            }
+
+            const solved = api.extract(data);
+            if (solved !== undefined && solved !== null) {
+                return { totalSolved: solved };
+            }
+        } catch (e) { 
+            console.warn(`Failed fetching from ${api.url}, trying next fallback...`); 
+        }
     }
-    throw new Error("LeetCode API failed.");
+    throw new Error(`All LeetCode APIs failed or timed out for user: ${username}`);
 }
 
+// 🚀 UPGRADED: Added robust error handling for Codeforces API
 async function getCodeforcesStats(handle, isPlayerOne) {
-    const statusRes = await fetch(`https://codeforces.com/api/user.status?handle=${handle}`);
-    const statusData = await statusRes.json();
+    const response = await fetch(`https://codeforces.com/api/user.status?handle=${handle}`);
+    
+    if (!response.ok) {
+        throw new Error(`Codeforces API Error: HTTP ${response.status}`);
+    }
+
+    const statusData = await response.json();
     
     let totalSolved = 0;
     if (statusData.status === "OK") {
@@ -180,7 +216,7 @@ function populateMatrix(players) {
     if(hint) hint.style.display = 'block';
 
     // =========================================================
-    // 3. Shareable Flashcard (NEW BAR CHART LOGIC)
+    // 3. Shareable Flashcard
     // =========================================================
     const you = players.find(p => p.id === 1);
     
@@ -189,7 +225,7 @@ function populateMatrix(players) {
         const exportDisplayName = you.name.toUpperCase();
         document.getElementById('export-name').textContent = exportDisplayName;
         
-        // Set Personal Total (Safely, without old LC/CF references)
+        // Set Personal Total
         const totalEl = document.getElementById('export-total');
         if (totalEl) totalEl.textContent = you.totalScore;
 
@@ -260,7 +296,7 @@ function renderPieChart() {
             labels: sortedTags,
             datasets: [{
                 data: dataValues,
-                backgroundColor: avatarPalette, // reuse palette for consistency
+                backgroundColor: avatarPalette, 
                 borderWidth: 0
             }]
         },
@@ -282,7 +318,6 @@ function renderPieChart() {
     });
 }
 
-// Bulletproof Download Function
 function downloadFlashcard() {
     const card = document.getElementById('export-card');
     const btn = document.getElementById('download-btn');
